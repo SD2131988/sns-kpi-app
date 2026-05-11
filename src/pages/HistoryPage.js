@@ -5,12 +5,26 @@ import { supabase, PLATFORMS, PLATFORM_COLORS, fmt, achievementClass } from '../
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler)
 
-const YEARS = ['2024', '2025', '2026', '2027']
+// 年度の開始年（例: 2025 → 2025年7月〜2026年6月）
+const FISCAL_YEARS = ['2023', '2024', '2025', '2026']
 
+// y は年度開始年（数値）
 const PERIODS = [
-  { id: 'full',  label: '通期',   months: (y) => Array.from({ length: 12 }, (_, i) => `${y}-${String(i + 1).padStart(2, '0')}`) },
-  { id: 'h1',   label: '上半期', months: (y) => Array.from({ length: 6  }, (_, i) => `${y}-${String(i + 1).padStart(2, '0')}`) },
-  { id: 'h2',   label: '下半期', months: (y) => Array.from({ length: 6  }, (_, i) => `${y}-${String(i + 7).padStart(2, '0')}`) },
+  {
+    id: 'full', label: '通期',
+    months: (y) => [
+      ...Array.from({ length: 6 }, (_, i) => `${y}-${String(i + 7).padStart(2, '0')}`),
+      ...Array.from({ length: 6 }, (_, i) => `${y + 1}-${String(i + 1).padStart(2, '0')}`),
+    ],
+  },
+  {
+    id: 'h1', label: '上期 (7〜12月)',
+    months: (y) => Array.from({ length: 6 }, (_, i) => `${y}-${String(i + 7).padStart(2, '0')}`),
+  },
+  {
+    id: 'h2', label: '下期 (1〜6月)',
+    months: (y) => Array.from({ length: 6 }, (_, i) => `${y + 1}-${String(i + 1).padStart(2, '0')}`),
+  },
 ]
 
 function periodSummary(allData, months, metricField, budgetField) {
@@ -23,7 +37,7 @@ function periodSummary(allData, months, metricField, budgetField) {
 export default function HistoryPage({ region, brand }) {
   const [allData, setAllData] = useState([])
   const [metric, setMetric] = useState('views')
-  const [year, setYear] = useState('2026')
+  const [year, setYear] = useState('2025')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,7 +56,8 @@ export default function HistoryPage({ region, brand }) {
 
   if (loading) return <div className="empty">読み込み中...</div>
 
-  const yearData = allData.filter(d => d.month.startsWith(year))
+  const fiscalMonths = PERIODS[0].months(parseInt(year))
+  const yearData = allData.filter(d => fiscalMonths.includes(d.month))
   const months = [...new Set(yearData.map(d => d.month))].sort()
   const metricField = metric === 'views' ? 'views' : metric === 'followers' ? 'followers' : 'posts'
   const budgetField = metric === 'views' ? 'view_budget' : metric === 'followers' ? 'follower_budget' : 'post_budget'
@@ -50,7 +65,7 @@ export default function HistoryPage({ region, brand }) {
   // 通期・半期サマリ
   const periodSummaries = PERIODS.map(p => ({
     ...p,
-    ...periodSummary(yearData, p.months(year), metricField, budgetField),
+    ...periodSummary(yearData, p.months(parseInt(year)), metricField, budgetField),
   }))
 
   const periodBarData = {
@@ -113,7 +128,7 @@ export default function HistoryPage({ region, brand }) {
       {/* 年・指標セレクター */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
         <select value={year} onChange={e => setYear(e.target.value)}>
-          {YEARS.map(y => <option key={y} value={y}>{y}年</option>)}
+          {FISCAL_YEARS.map(y => <option key={y} value={y}>{y}年度 ({y}/7〜{parseInt(y)+1}/6)</option>)}
         </select>
         <div className="tabs" style={{ margin: 0 }}>
           {[['views', '閲覧数 ★'], ['followers', 'フォロワー数'], ['posts', '投稿数']].map(([v, l]) => (
@@ -126,7 +141,7 @@ export default function HistoryPage({ region, brand }) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-header">
           <span className="card-title">通期 / 半期別 達成率</span>
-          <span className="badge badge-blue">{year}年</span>
+          <span className="badge badge-blue">{year}年度</span>
         </div>
 
         {/* サマリカード */}
