@@ -37,13 +37,17 @@ export default function Dashboard({ month, region, brand }) {
   const totalPosts = rows.reduce((s, d) => s + d.posts, 0)
   const viewBudget = rows.reduce((s, d) => s + d.view_budget, 0)
   const folBudget = rows.reduce((s, d) => s + d.follower_budget, 0)
+  const postBudget = rows.reduce((s, d) => s + d.post_budget, 0)
   const viewAch = viewBudget > 0 ? totalViews / viewBudget : null
   const folAch = folBudget > 0 ? totalFollowers / folBudget : null
+  const postAch = postBudget > 0 ? totalPosts / postBudget : null
 
   const prevViews = prevRows.reduce((s, d) => s + d.views, 0)
   const prevFol = prevRows.reduce((s, d) => s + d.followers, 0)
+  const prevPosts = prevRows.reduce((s, d) => s + d.posts, 0)
   const viewDiff = prevViews > 0 ? ((totalViews - prevViews) / prevViews * 100).toFixed(1) : null
   const folDiff = prevFol > 0 ? ((totalFollowers - prevFol) / prevFol * 100).toFixed(1) : null
+  const postDiff = prevPosts > 0 ? ((totalPosts - prevPosts) / prevPosts * 100).toFixed(1) : null
 
   const byPlatform = PLATFORMS.map(p => ({
     p, views: rows.filter(d => d.platform === p).reduce((s, d) => s + d.views, 0),
@@ -134,46 +138,117 @@ export default function Dashboard({ month, region, brand }) {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-header"><span className="card-title">アカウント別KPI</span></div>
-        <div className="table-wrap">
-          <table>
+      {/* サマリ説明文 */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <span className="card-title">月次サマリ</span>
+          <span className="badge badge-blue">{month}</span>
+        </div>
+
+        {/* 全体サマリ */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>■ 全体</div>
+          <table style={{ width: 'auto', fontSize: 13 }}>
             <thead>
               <tr>
-                <th>地域</th><th>ブランド</th><th>プラットフォーム</th>
-                <th>閲覧数<span className="kpi-star">★</span></th><th>予算</th><th>達成率</th>
-                <th>フォロワー</th><th>予算</th><th>達成率</th><th>投稿数</th>
+                <th style={{ minWidth: 90 }}>指標</th>
+                <th style={{ minWidth: 80 }}>実績</th>
+                <th style={{ minWidth: 70 }}>予算比</th>
+                <th style={{ minWidth: 80 }}>前月比</th>
               </tr>
             </thead>
             <tbody>
-              {rows.sort((a, b) => b.views - a.views).map(d => {
-                const vAch = d.view_budget > 0 ? d.views / d.view_budget : null
-                const fAch = d.follower_budget > 0 ? d.followers / d.follower_budget : null
-                return (
-                  <tr key={`${d.region}-${d.brand}-${d.platform}`}>
-                    <td><span className="badge badge-blue">{d.region}</span></td>
-                    <td>
-                      <span className="dot" style={{ background: BRAND_COLORS[d.brand] }} />
-                      {d.brand}
-                    </td>
-                    <td>
-                      <span className="dot" style={{ background: PLATFORM_COLORS[d.platform] }} />
-                      {d.platform}
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{fmt(d.views)}</td>
-                    <td style={{ color: 'var(--c-text2)' }}>{d.view_budget > 0 ? fmt(d.view_budget) : '—'}</td>
-                    <td>{vAch !== null ? <span className={achievementClass(vAch)}>{(vAch * 100).toFixed(0)}%</span> : '—'}</td>
-                    <td>{fmt(d.followers)}</td>
-                    <td style={{ color: 'var(--c-text2)' }}>{d.follower_budget > 0 ? fmt(d.follower_budget) : '—'}</td>
-                    <td>{fAch !== null ? <span className={achievementClass(fAch)}>{(fAch * 100).toFixed(0)}%</span> : '—'}</td>
-                    <td>{d.posts.toLocaleString()}</td>
-                  </tr>
-                )
-              })}
+              <tr>
+                <td>閲覧数 ★</td>
+                <td style={{ fontWeight: 600 }}>{fmt(totalViews)}</td>
+                <td>{viewAch !== null ? <span className={achievementClass(viewAch)}>{(viewAch * 100).toFixed(0)}%</span> : '—'}</td>
+                <td className={viewDiff !== null ? (+viewDiff >= 0 ? 'up' : 'down') : ''}>
+                  {viewDiff !== null ? `${+viewDiff >= 0 ? '▲' : '▼'}${Math.abs(viewDiff)}%` : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td>フォロワー数</td>
+                <td style={{ fontWeight: 600 }}>{fmt(totalFollowers)}</td>
+                <td>{folAch !== null ? <span className={achievementClass(folAch)}>{(folAch * 100).toFixed(0)}%</span> : '—'}</td>
+                <td className={folDiff !== null ? (+folDiff >= 0 ? 'up' : 'down') : ''}>
+                  {folDiff !== null ? `${+folDiff >= 0 ? '▲' : '▼'}${Math.abs(folDiff)}%` : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td>投稿数</td>
+                <td style={{ fontWeight: 600 }}>{totalPosts.toLocaleString()}件</td>
+                <td>{postAch !== null ? <span className={achievementClass(postAch)}>{(postAch * 100).toFixed(0)}%</span> : '—'}</td>
+                <td className={postDiff !== null ? (+postDiff >= 0 ? 'up' : 'down') : ''}>
+                  {postDiff !== null ? `${+postDiff >= 0 ? '▲' : '▼'}${Math.abs(postDiff)}%` : '—'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* 媒体別サマリ */}
+        <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>■ 媒体別</div>
+        <div className="table-wrap">
+          <table style={{ fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th>ブランド</th>
+                <th>媒体</th>
+                <th>閲覧数</th>
+                <th>閲覧予算比</th>
+                <th>閲覧前月比</th>
+                <th>フォロワー</th>
+                <th>フォロワー予算比</th>
+                <th>フォロワー前月比</th>
+                <th>投稿数</th>
+                <th>投稿予算比</th>
+                <th>投稿前月比</th>
+              </tr>
+            </thead>
+            <tbody>
+              {['DS', 'UNY'].flatMap(b =>
+                PLATFORMS.map(p => {
+                  const cur = rows.find(d => d.brand === b && d.platform === p)
+                  const prev = prevRows.find(d => d.brand === b && d.platform === p)
+                  if (!cur) return null
+                  const vAch = cur.view_budget > 0 ? cur.views / cur.view_budget : null
+                  const fAch = cur.follower_budget > 0 ? cur.followers / cur.follower_budget : null
+                  const pAch = cur.post_budget > 0 ? cur.posts / cur.post_budget : null
+                  const vDiff = prev?.views > 0 ? ((cur.views - prev.views) / prev.views * 100).toFixed(1) : null
+                  const fDiff = prev?.followers > 0 ? ((cur.followers - prev.followers) / prev.followers * 100).toFixed(1) : null
+                  const pDiff = prev?.posts > 0 ? ((cur.posts - prev.posts) / prev.posts * 100).toFixed(1) : null
+                  return (
+                    <tr key={`${b}-${p}`}>
+                      <td>
+                        <span className="dot" style={{ background: BRAND_COLORS[b] }} />{b}
+                      </td>
+                      <td>
+                        <span className="dot" style={{ background: PLATFORM_COLORS[p] }} />{p}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{fmt(cur.views)}</td>
+                      <td>{vAch !== null ? <span className={achievementClass(vAch)}>{(vAch * 100).toFixed(0)}%</span> : '—'}</td>
+                      <td className={vDiff !== null ? (+vDiff >= 0 ? 'up' : 'down') : ''}>
+                        {vDiff !== null ? `${+vDiff >= 0 ? '▲' : '▼'}${Math.abs(vDiff)}%` : '—'}
+                      </td>
+                      <td>{fmt(cur.followers)}</td>
+                      <td>{fAch !== null ? <span className={achievementClass(fAch)}>{(fAch * 100).toFixed(0)}%</span> : '—'}</td>
+                      <td className={fDiff !== null ? (+fDiff >= 0 ? 'up' : 'down') : ''}>
+                        {fDiff !== null ? `${+fDiff >= 0 ? '▲' : '▼'}${Math.abs(fDiff)}%` : '—'}
+                      </td>
+                      <td>{cur.posts.toLocaleString()}件</td>
+                      <td>{pAch !== null ? <span className={achievementClass(pAch)}>{(pAch * 100).toFixed(0)}%</span> : '—'}</td>
+                      <td className={pDiff !== null ? (+pDiff >= 0 ? 'up' : 'down') : ''}>
+                        {pDiff !== null ? `${+pDiff >= 0 ? '▲' : '▼'}${Math.abs(pDiff)}%` : '—'}
+                      </td>
+                    </tr>
+                  )
+                }).filter(Boolean)
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
     </div>
   )
 }
